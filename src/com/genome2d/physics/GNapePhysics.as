@@ -7,8 +7,6 @@
 */
 package com.genome2d.physics
 {
-	import com.genome2d.g2d;
-	
 	import flash.Boot;
 	import flash.utils.Dictionary;
 	
@@ -16,20 +14,18 @@ package com.genome2d.physics
 	import nape.space.Space;
 	import nape.util.Debug;
 	
-	use namespace g2d;
-	
 	public class GNapePhysics extends GPhysics
 	{
 		private var __dPreCollisionListeners:Dictionary = new Dictionary();
 		private var __dCollisionListeners:Dictionary = new Dictionary();
 		private var __dSensorListeners:Dictionary = new Dictionary();
 		
-		g2d var eSpace:Space;
+		private var eSpace:Space;
 		public function get space():Space {
 			return eSpace;
 		}
 		
-		protected var _eDebug:Debug;
+		public var _eDebug:Debug;
 		
 		public function GNapePhysics(p_gravity:Vec2, p_debug:Debug = null) {
 			new Boot();
@@ -37,9 +33,9 @@ package com.genome2d.physics
 			_eDebug = p_debug;
 			eSpace = new Space(p_gravity);
 		}
-
-		override g2d function step(p_deltaTime:Number):void {
-			if (!_bRunning) return;
+		
+		override public function step(p_deltaTime:Number):void {
+			if (!g2d_running) return;
 
 			if (p_deltaTime > 100) p_deltaTime = 100;
 

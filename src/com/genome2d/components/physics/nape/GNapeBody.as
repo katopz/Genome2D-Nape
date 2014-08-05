@@ -7,10 +7,10 @@
 */
 package com.genome2d.components.physics.nape
 {
-	import com.genome2d.g2d;
-	import com.genome2d.components.physics.GBody;
-	import com.genome2d.core.GNode;
+	import com.genome2d.Genome2D;
 	import com.genome2d.error.GError;
+	import com.genome2d.node.GNode;
+	import com.genome2d.physics.GBody;
 	import com.genome2d.physics.GNapePhysics;
 	
 	import flash.utils.Dictionary;
@@ -31,15 +31,13 @@ package com.genome2d.components.physics.nape
 	import nape.shape.Shape;
 	import nape.shape.ShapeType;
 	
-	use namespace g2d;
-
 	public class GNapeBody extends GBody
 	{
 		static public const DYNAMIC:int = 0;
 		static public const KINEMATIC:int = 1;
 		static public const STATIC:int = 2;
 		
-		g2d var ePhysics:GNapePhysics;
+		public var ePhysics:GNapePhysics;
 		public function get physics():GNapePhysics {
 			return ePhysics;
 		}
@@ -89,7 +87,7 @@ package com.genome2d.components.physics.nape
 			return _eNapeBody.position.x;
 		}
 		override public function set x(p_x:Number):void {
-			if (_eNapeBody.isKinematic() && cNode.core.nCurrentDeltaTime!=0) _eNapeBody.kinematicVel.x = (p_x - _eNapeBody.position.x)*1000/cNode.core.nCurrentDeltaTime;
+			if (_eNapeBody.isKinematic() && g2d_node.core.getCurrentFrameDeltaTime()!=0) _eNapeBody.kinematicVel.x = (p_x - _eNapeBody.position.x)*1000/g2d_node.core.getCurrentFrameDeltaTime();
 			_eNapeBody.position.x = p_x;
 		}
 		
@@ -97,7 +95,7 @@ package com.genome2d.components.physics.nape
 			return _eNapeBody.position.y;
 		}
 		override public function set y(p_y:Number):void {
-			if (_eNapeBody.isKinematic() && cNode.core.nCurrentDeltaTime!=0) _eNapeBody.kinematicVel.y = (p_y - _eNapeBody.position.y)*1000/cNode.core.nCurrentDeltaTime;
+			if (_eNapeBody.isKinematic() && g2d_node.core.getCurrentFrameDeltaTime()!=0) _eNapeBody.kinematicVel.y = (p_y - _eNapeBody.position.y)*1000/g2d_node.core.getCurrentFrameDeltaTime();
 			_eNapeBody.position.y = p_y;
 		}
 		
@@ -129,7 +127,7 @@ package com.genome2d.components.physics.nape
 			return _eNapeBody.rotation;
 		}
 		override public function set rotation(p_rotation:Number):void {
-			if (_eNapeBody.isKinematic() && cNode.core.nCurrentDeltaTime!=0) _eNapeBody.kinAngVel = (p_rotation - _eNapeBody.rotation)*1000/cNode.core.nCurrentDeltaTime;
+			if (_eNapeBody.isKinematic() && g2d_node.core.getCurrentFrameDeltaTime()!=0) _eNapeBody.kinAngVel = (p_rotation - _eNapeBody.rotation)*1000/g2d_node.core.getCurrentFrameDeltaTime();
 			_eNapeBody.rotation = p_rotation;
 		}
 		
@@ -195,26 +193,28 @@ package com.genome2d.components.physics.nape
 			
 			_eNapeBody = p_body;
 			_eNapeBody.userData.component = this;
-			cNode.cTransform.invalidate(true, false);
-			_eNapeBody.position.x = cNode.cTransform.nWorldX;
-			_eNapeBody.position.y = cNode.cTransform.nWorldY;
+			g2d_node.g2d_body = this;
+			g2d_node.transform.invalidate(true, false);
+			_eNapeBody.position.x = g2d_node.transform.g2d_worldX;
+			_eNapeBody.position.y = g2d_node.transform.g2d_worldY;
 			
-			if (node.isOnStage()) addToSpace();
+			if (node.isOnStage())
+				addToSpace();
 		}
 		
-		override public function set active(p_value:Boolean):void {
-			_bActive = p_value;
-			if (!_bActive) {
+		override public function setActive(p_value:Boolean):void {
+			g2d_active = p_value;
+			if (!g2d_active) {
 				_eNapeBody.space = null;
 			} else {
-				_eNapeBody.space = (node.core.physics as GNapePhysics).eSpace;
+				_eNapeBody.space = GNapePhysics(Genome2D.physics).space;
 			}
 		}
 		
 		public function GNapeBody(p_node:GNode) {
 			super(p_node);
 			
-			ePhysics = node.core.physics as GNapePhysics;
+			ePhysics = Genome2D.physics as GNapePhysics;
 			if (ePhysics == null) throw new GError("GError: Physics not initialized.");
 		}
 		
@@ -238,14 +238,16 @@ package com.genome2d.components.physics.nape
 				_eNapeBody.kinematicVel.setxy(0,0);
 				_eNapeBody.kinAngVel = 0;
 			}
+			
+			//g2d_node.transform.invalidate(true, false);
 		}
 		
-		override g2d function addToSpace():void {
-			if (node.core.physics == null) throw new GError(GError.NO_PHYSICS_INITIALIZED);
+		override public function addToSpace():void {
+			if (Genome2D.physics == null) throw new GError("GError");
 			_eNapeBody.space = ePhysics.space;
 		}
 		
-		override g2d function removeFromSpace():void {
+		override public function removeFromSpace():void {
 			_eNapeBody.space = null;
 		}
 
@@ -266,7 +268,7 @@ package com.genome2d.components.physics.nape
 		}
 		
 		public function removePreCollisionListener(p_cbType:CbType, p_callback:Function):void {
-			for (var it in __dPreCollisionListeners) {
+			for (var it:* in __dPreCollisionListeners) {
 				var listener:PreListener = it as PreListener;
 				if (__dPreCollisionListeners[it] != p_callback) continue;
 				if (!listener.options2.includes.has(p_cbType) || listener.options2.includes.length != 1) continue;
@@ -292,7 +294,7 @@ package com.genome2d.components.physics.nape
 		}
 		
 		public function removeCollisionListener(p_cbEvent:CbEvent, p_cbType:CbType, p_callback:Function):void {
-			for (var it in __dCollisionListeners) {
+			for (var it:* in __dCollisionListeners) {
 				var listener:InteractionListener = it as InteractionListener;
 				if (__dCollisionListeners[it] != p_callback) continue;
 				if (listener.event != p_cbEvent) continue;
@@ -303,6 +305,7 @@ package com.genome2d.components.physics.nape
 		}
 
 		private var __dSensorListeners:Dictionary = new Dictionary();
+		private var _xPrototype:XML;
 		
 		public function addSensorListener(p_cbEvent:CbEvent, p_cbType:CbType, p_callback:Function):void {
 			var callbackTypes:OptionType = new OptionType(_eNapeBody.cbTypes, CbType.ANY_BODY);
@@ -318,7 +321,7 @@ package com.genome2d.components.physics.nape
 		}
 		
 		public function removeSensorListener(p_cbEvent:CbEvent, p_cbType:CbType, p_callback:Function):void {
-			for (var it in __dSensorListeners) {
+			for (var it:* in __dSensorListeners) {
 				var listener:InteractionListener = it as InteractionListener;
 				if (__dSensorListeners[it] != p_callback) continue;
 				if (listener.event != p_cbEvent) continue;
@@ -329,17 +332,17 @@ package com.genome2d.components.physics.nape
 		}
 		
 		private function clearListeners():void {
-			for (var it in __dPreCollisionListeners) {
+			for (var it:* in __dPreCollisionListeners) {
 				physics.space.listeners.remove(it);
 			}
 			__dPreCollisionListeners = null;
 			
-			for (var it in __dCollisionListeners) {
+			for (it in __dCollisionListeners) {
 				physics.space.listeners.remove(it);
 			}
 			__dCollisionListeners = null;
 			
-			for (var it in __dSensorListeners) {
+			for (it in __dSensorListeners) {
 				physics.space.listeners.remove(it);
 			}
 			__dSensorListeners = null;			
